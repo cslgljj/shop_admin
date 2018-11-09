@@ -1,13 +1,35 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 import Login from '@/components/Login'
+import Home from '@/components/Home'
 
 Vue.use(Router)
 
-export default new Router({
-  routes: [{
-    path: '/',
-    name: 'Login',
-    component: Login
-  }]
+const router = new Router({
+  routes: [
+    {
+      path: '/', // 默认进入路由
+      redirect: '/login' // 重定向
+    },
+    {
+      path: '/login',
+      component: Login
+    },
+    {
+      path: '/home',
+      component: Home
+    }
+  ]
 })
+
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token')
+  if (to.path === '/login' || token) {
+    // console.log(666)
+    next()
+  } else {
+    next('/login')
+  }
+})
+
+export default router
