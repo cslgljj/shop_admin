@@ -37,6 +37,7 @@
                     <el-switch
                     v-model="scope.row.mg_state"
                     active-color="#13ce66"
+                    @change="statusChange(scope.row)"
                     inactive-color="#ff4949">
                     </el-switch>
                 </template>
@@ -44,9 +45,9 @@
             <el-table-column
                 label="操作">
                 <template slot-scope="scope">
-                    <el-button size="small" type="primary" icon="el-icon-edit" plain></el-button>
+                    <el-button size="small" @click="editUser(scope.row.id)" type="primary" icon="el-icon-edit" plain></el-button>
                     <el-button size="small"  @click="del(scope.row.id)" type="danger" icon="el-icon-delete" plain></el-button>
-                    <el-button size="small" type="success" icon="el-icon-check" plain></el-button>
+                    <el-button size="small" type="success" @click="assignRole" icon="el-icon-check" plain>分配角色</el-button>
                 </template>
             </el-table-column>
         </el-table>
@@ -69,7 +70,7 @@
                 <el-form-item prop="password" label="密码" :label-width="formLabelWidth">
                     <el-input v-model="form.password" autocomplete="off"></el-input>
                 </el-form-item>
-                <el-form-item label="邮箱" :label-width="formLabelWidth">
+                <el-form-item label="邮箱" prop="email" :label-width="formLabelWidth">
                     <el-input v-model="form.email" autocomplete="off"></el-input>
                 </el-form-item>
                 <el-form-item label="手机" :label-width="formLabelWidth">
@@ -81,6 +82,39 @@
                 <el-button type="primary" @click="save('form')">确 定</el-button>
             </div>
         </el-dialog>
+        <!-- 编辑功能 -->
+        <el-dialog title="编辑用户" :rules="rules" :visible.sync="editDialogFormVisible">
+            <el-form  :model="editForm" ref="editForm" :rules="rules">
+                <el-form-item label="用户名" :label-width="formLabelWidth">
+                    <el-input v-model="editForm.username" autocomplete="off" disabled=""></el-input>
+                </el-form-item>
+                <el-form-item label="邮箱" prop="email" :label-width="formLabelWidth">
+                    <el-input v-model="editForm.email" autocomplete="off"></el-input>
+                </el-form-item>
+                <el-form-item label="手机" :label-width="formLabelWidth">
+                    <el-input v-model="editForm.mobile" autocomplete="off"></el-input>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="handleEditCancel">取 消</el-button>
+                <el-button type="primary" @click="editSave()">确 定</el-button>
+            </div>
+        </el-dialog>
+        <!-- 分配角色 -->
+        <el-dialog title="编辑用户" :rules="rules" :visible.sync="roleDialogFormVisible">
+            <el-form  :model="roleForm" ref="roleForm" :rules="rules">
+                <el-form-item label="用户名" :label-width="formLabelWidth">
+                    <el-input v-model="editForm.username" autocomplete="off" disabled=""></el-input>
+                </el-form-item>
+                <el-form-item label="角色列表" prop="email" :label-width="formLabelWidth">
+                    <el-input></el-input>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="handleEditCancel">取 消</el-button>
+                <el-button type="primary" @click="editSave()">确 定</el-button>
+            </div>
+        </el-dialog>
     </div>
 </template>
 
@@ -88,16 +122,29 @@
 export default {
   data() {
     return {
+      roleForm: {},
       rules: {
         username: [
           { required: true, message: '请输入用户名字', trigger: 'change' },
           { min: 3, max: 9, message: '长度在 3 到 9 个字符', trigger: 'change' }
+        ],
+        email: [
+          { required: true, message: '请输入邮箱地址', trigger: 'change' },
+          { type: 'email', message: '请输入正确的邮箱地址', trigger: 'change' }
         ],
         password: [
           { required: true, message: '请输入用户密码', trigger: 'change' },
           { min: 6, max: 12, message: '长度在 6 到 12 个字符', trigger: 'change' }
         ] },
       dialogFormVisible: false,
+      editDialogFormVisible: false,
+      roleDialogFormVisible: false,
+      editForm: {
+        username: '',
+        email: '',
+        mobile: '',
+        rid: ''
+      },
       form: {
         username: '',
         password: '',
@@ -113,6 +160,67 @@ export default {
     }
   },
   methods: {
+    assignRole() {
+      this.roleDialogFormVisible = true
+    },
+    statusChange(row) {
+      console.log(row)
+      this.$axios({
+        method: 'put',
+        url: `users/${row.id}/state/${row.mg_state}`,
+        headers: { Authorization: localStorage.getItem('token') }
+      }).then((res) => {
+        if (res.data.meta.status === 200) {
+          this.getUserList()
+          this.$message({
+            showClose: true,
+            message: '设置成功',
+            type: 'success',
+            duration: 1000
+          })
+        }
+      })
+    },
+    editSave() {
+      this.$axios.put(`users/${this.editForm.rid}`,
+        {
+          email: this.editForm.email,
+          mobile: this.editForm.mobile
+
+        }, {
+          headers: { Authorization: localStorage.getItem('token') }
+        }
+      ).then((res) => {
+        if (res.data.meta.status === 200) {
+          this.getUserList()
+          this.editDialogFormVisible = false
+          this.$message({
+            showClose: true,
+            message: '更新成功',
+            type: 'success',
+            duration: 1000
+          })
+        }
+      })
+    },
+    handleEditCancel() {
+      this.editDialogFormVisible = false
+      this.$refs.editForm.resetFields()
+    },
+    editUser(id) {
+      // 根据ID查询用户信息
+      this.$axios.get(`users/${id}`, {
+        headers: { Authorization: localStorage.getItem('token') }
+      }).then((res) => {
+        if (res.data.meta.status === 200) {
+          this.editForm.username = res.data.data.username
+          this.editForm.email = res.data.data.email
+          this.editForm.mobile = res.data.data.mobile
+          this.editForm.rid = res.data.data.id
+        }
+      })
+      this.editDialogFormVisible = true
+    },
     handleCancel() {
       this.dialogFormVisible = false
       this.$refs.form.resetFields()
@@ -123,9 +231,21 @@ export default {
     save(formName) {
       this.$refs[formName].validate((valid) => {
         if (valid) {
-          this.$axios.post('http://localhost:8888/api/private/v1/users', this.form)
+          this.$axios.post('users', this.form, {
+            headers: { Authorization: localStorage.getItem('token') }
+          }
+          )
             .then((res) => {
-              console.log(res)
+              if (res.data.meta.status === 201) {
+                this.getUserList()
+                this.dialogFormVisible = false
+                this.$message({
+                  showClose: true,
+                  message: '创建成功',
+                  type: 'success',
+                  duration: 1000
+                })
+              }
             })
         } else {
           this.$message.error('请填写完整内容哦')
@@ -133,7 +253,7 @@ export default {
       })
     },
     del(id) {
-      this.$axios.delete(`http://localhost:8888/api/private/v1/users/${id}`, {
+      this.$axios.delete(`users/${id}`, {
         headers: { Authorization: localStorage.getItem('token') } }
       ).then((res) => {
         if (res.data.meta.status === 200) {
@@ -141,6 +261,7 @@ export default {
             this.currentPage = this.currentPage - 1
           }
           this.getUserList()
+          this.$message.success('删除成功')
         }
       })
     },
@@ -153,7 +274,7 @@ export default {
       this.getUserList()
     },
     getUserList() {
-      this.$axios.get('http://localhost:8888/api/private/v1/users', {
+      this.$axios.get('users', {
         params: { query: this.query, pagenum: this.currentPage, pagesize: this.pageSize },
         headers: {
           Authorization: localStorage.getItem('token')

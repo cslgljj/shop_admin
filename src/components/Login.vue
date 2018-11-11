@@ -6,7 +6,7 @@
           <el-input v-model="form.username"></el-input>
         </el-form-item>
         <el-form-item label="密码" prop="password">
-          <el-input v-model="form.password" type="password"></el-input>
+          <el-input v-model="form.password" @keyup.enter.native="submitLogin('form')" type="password"></el-input>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="submitLogin('form')">登陆</el-button>
@@ -43,7 +43,7 @@ export default {
     submitLogin(formName) {
       this.$refs[formName].validate((valid) => {
         if (valid) {
-          this.$axios.post('http://localhost:8888/api/private/v1/login', this.form).then((res) => {
+          this.$axios.post('login', this.form).then((res) => {
             if (res.data.meta.status === 200) {
               this.$message({
                 showClose: true,
