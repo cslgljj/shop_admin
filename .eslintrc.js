@@ -50,6 +50,7 @@ module.exports = {
     "no-console": 0,
     "consistent-return": 0,
     "max-len": 0,
+    "no-param-reassign": 0,
     // allow debugger during development
     'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off'
   }

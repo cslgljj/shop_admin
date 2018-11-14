@@ -164,13 +164,11 @@ export default {
       this.roleDialogFormVisible = true
     },
     statusChange(row) {
-      console.log(row)
       this.$axios({
         method: 'put',
-        url: `users/${row.id}/state/${row.mg_state}`,
-        headers: { Authorization: localStorage.getItem('token') }
-      }).then((res) => {
-        if (res.data.meta.status === 200) {
+        url: `users/${row.id}/state/${row.mg_state}` }).then((res) => {
+        const { meta: { status } } = res
+        if (status === 200) {
           this.getUserList()
           this.$message({
             showClose: true,
@@ -186,12 +184,9 @@ export default {
         {
           email: this.editForm.email,
           mobile: this.editForm.mobile
-
-        }, {
-          headers: { Authorization: localStorage.getItem('token') }
-        }
-      ).then((res) => {
-        if (res.data.meta.status === 200) {
+        }).then((res) => {
+        const { meta: { status } } = res
+        if (status === 200) {
           this.getUserList()
           this.editDialogFormVisible = false
           this.$message({
@@ -207,18 +202,16 @@ export default {
       this.editDialogFormVisible = false
       this.$refs.editForm.resetFields()
     },
-    editUser(id) {
+    async editUser(id) {
       // 根据ID查询用户信息
-      this.$axios.get(`users/${id}`, {
-        headers: { Authorization: localStorage.getItem('token') }
-      }).then((res) => {
-        if (res.data.meta.status === 200) {
-          this.editForm.username = res.data.data.username
-          this.editForm.email = res.data.data.email
-          this.editForm.mobile = res.data.data.mobile
-          this.editForm.rid = res.data.data.id
-        }
-      })
+      const res = await this.$axios.get(`users/${id}`)
+      const { meta: { status }, data } = res
+      if (status === 200) {
+        this.editForm.username = data.username
+        this.editForm.email = data.email
+        this.editForm.mobile = data.mobile
+        this.editForm.rid = data.id
+      }
       this.editDialogFormVisible = true
     },
     handleCancel() {
@@ -229,41 +222,32 @@ export default {
       this.getUserList()
     },
     save(formName) {
-      this.$refs[formName].validate((valid) => {
-        if (valid) {
-          this.$axios.post('users', this.form, {
-            headers: { Authorization: localStorage.getItem('token') }
-          }
-          )
-            .then((res) => {
-              if (res.data.meta.status === 201) {
-                this.getUserList()
-                this.dialogFormVisible = false
-                this.$message({
-                  showClose: true,
-                  message: '创建成功',
-                  type: 'success',
-                  duration: 1000
-                })
-              }
-            })
-        } else {
-          this.$message.error('请填写完整内容哦')
+      this.$refs[formName].validate(async(valid) => {
+        if (!valid) return false
+        const res = await this.$axios.post('users', this.form)
+        const { meta: { status } } = res
+        if (status === 201) {
+          this.getUserList()
+          this.dialogFormVisible = false
+          this.$message({
+            showClose: true,
+            message: '创建成功',
+            type: 'success',
+            duration: 1000
+          })
         }
       })
     },
-    del(id) {
-      this.$axios.delete(`users/${id}`, {
-        headers: { Authorization: localStorage.getItem('token') } }
-      ).then((res) => {
-        if (res.data.meta.status === 200) {
-          if (this.userList.length === 1) {
-            this.currentPage = this.currentPage - 1
-          }
-          this.getUserList()
-          this.$message.success('删除成功')
+    async del(id) {
+      const res = await this.$axios.delete(`users/${id}`)
+      const { meta: { status } } = res
+      if (status === 200) {
+        if (this.userList.length === 1) {
+          this.currentPage = this.currentPage - 1
         }
-      })
+        this.getUserList()
+        this.$message.success('删除成功')
+      }
     },
     handleSizeChange(val) {
       this.pageSize = val
@@ -273,19 +257,15 @@ export default {
       this.currentPage = val
       this.getUserList()
     },
-    getUserList() {
-      this.$axios.get('users', {
-        params: { query: this.query, pagenum: this.currentPage, pagesize: this.pageSize },
-        headers: {
-          Authorization: localStorage.getItem('token')
-        }
-      }).then((res) => {
-        console.log(res.data)
-        if (res.data.meta.status === 200) {
-          this.total = res.data.data.total
-          this.userList = res.data.data.users
-        }
+    async getUserList() {
+      const res = await this.$axios.get('users', {
+        params: { query: this.query, pagenum: this.currentPage, pagesize: this.pageSize }
       })
+      const { data, meta: { status } } = res
+      if (status === 200) {
+        this.total = data.total
+        this.userList = data.users
+      }
     }
   },
   created() {
@@ -298,12 +278,6 @@ export default {
 
 <style lang="less" scoped>
 .user {
-  .el-breadcrumb {
-    height: 30px;
-    line-height: 30px;
-    background: #d4dae0;
-    padding: 15px;
-  }
   .el-pagination {
     margin-top: 10px;
   }

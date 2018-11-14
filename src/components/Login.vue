@@ -41,24 +41,23 @@ export default {
       this.$refs[formName].resetFields()
     },
     submitLogin(formName) {
-      this.$refs[formName].validate((valid) => {
-        if (valid) {
-          this.$axios.post('login', this.form).then((res) => {
-            if (res.data.meta.status === 200) {
-              this.$message({
-                showClose: true,
-                message: '登陆成功',
-                type: 'success'
-              })
-              localStorage.setItem('token', res.data.data.token)
-              this.$router.push('/home')
-            } else {
-              this.$message.error(res.data.meta.msg)
-              return false
-            }
-          })
-        } else {
+      this.$refs[formName].validate(async(valid) => {
+        if (!valid) {
           this.$message.error('请输入正确的用户名和密码')
+          return false
+        }
+        const res = await this.$axios.post('login', this.form)
+        const { data, meta: { status, msg } } = res
+        if (status === 200) {
+          this.$message({
+            showClose: true,
+            message: '登陆成功',
+            type: 'success'
+          })
+          localStorage.setItem('token', data.token)
+          this.$router.push('/home')
+        } else {
+          this.$message.error(msg)
           return false
         }
       })
