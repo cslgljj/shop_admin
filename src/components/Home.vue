@@ -17,67 +17,23 @@
               <el-menu
                 router
                 unique-opened
-                default-active="/users"
+                :default-active="$route.path.slice(1).split('-')[0]"
                 class="el-menu-vertical-demo"
                 @open="handleOpen"
                 @close="handleClose"
                 background-color="#545c64"
                 text-color="#fff"
                 active-text-color="#ffd04b">
-                <el-submenu index="1">
+                <el-submenu :index="level1.path" v-for="level1 in menuList" :key="level1.id">
                   <template slot="title" >
                     <i class="el-icon-location"></i>
-                    <span>用户管理</span>
+                    <span>{{level1.authName}}</span>
                   </template>
-                  <el-menu-item index="/users">
+                  <el-menu-item :index="level2.path" v-for="level2 in level1.children" :key="level2.id">
                   <i class="el-icon-menu"></i>
-                  <span slot="title">用户列表</span>
+                  <span slot="title">{{level2.authName}}</span>
                   </el-menu-item>
                 </el-submenu>
-                  <el-submenu index="2">
-                    <template slot="title" >
-                      <i class="el-icon-location"></i>
-                      <span>权限管理</span>
-                    </template>
-                    <el-menu-item index="/roles">
-                    <i class="el-icon-menu"></i>
-                    <span slot="title">角色列表</span>
-                    </el-menu-item>
-                    <el-menu-item index="/rights">
-                    <i class="el-icon-menu"></i>
-                    <span slot="title">权限列表</span>
-                    </el-menu-item>
-                  </el-submenu>
-                  <el-submenu index="3">
-                    <template slot="title" >
-                      <i class="el-icon-location"></i>
-                      <span>商品管理</span>
-                    </template>
-                    <el-menu-item index="3-1">
-                    <i class="el-icon-menu"></i>
-                    <span slot="title">商品列表</span>
-                    </el-menu-item>
-                  </el-submenu>
-                  <el-submenu index="4">
-                    <template slot="title" >
-                      <i class="el-icon-location"></i>
-                      <span>订单管理</span>
-                    </template>
-                    <el-menu-item index="4-1">
-                    <i class="el-icon-menu"></i>
-                    <span slot="title">订单列表</span>
-                    </el-menu-item>
-                  </el-submenu>
-                  <el-submenu index="5">
-                    <template slot="title" >
-                      <i class="el-icon-location"></i>
-                      <span>数据统计</span>
-                    </template>
-                    <el-menu-item index="5-1">
-                    <i class="el-icon-menu"></i>
-                    <span slot="title">数据报表</span>
-                    </el-menu-item>
-                  </el-submenu>
                 </el-menu>
             </el-aside>
             <el-main>
@@ -91,7 +47,15 @@
 export default {
   data() {
     return {
-      dialogVisible: false
+      dialogVisible: false,
+      menuList: []
+    }
+  },
+  async created() {
+    const res = await this.$axios.get('/menus')
+    const { data, meta: { status } } = res
+    if (status === 200) {
+      this.menuList = data
     }
   },
   methods: {

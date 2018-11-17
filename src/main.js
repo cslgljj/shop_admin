@@ -1,11 +1,18 @@
+import 'quill/dist/quill.core.css'
+import 'quill/dist/quill.snow.css'
+import 'quill/dist/quill.bubble.css'
 import 'element-ui/lib/theme-chalk/index.css'
 import '@/assets/common.less'
+import moment from 'moment'
+import elementTreeGrid from 'element-tree-grid'
+import VueQuillEditor from 'vue-quill-editor'
 import ElementUI from 'element-ui'
 import axios from 'axios'
 import Vue from 'vue'
 import App from './App'
 
 import router from './router'
+
 
 axios.defaults.baseURL = 'http://localhost:8888/api/private/v1/'
 // axios拦截器
@@ -24,9 +31,13 @@ axios.interceptors.response.use(response => response.data, error =>
 )
 
 Vue.use(ElementUI)
+Vue.use(VueQuillEditor)
 
+Vue.component('element-tree-item', elementTreeGrid)
 Vue.config.productionTip = false
 Vue.prototype.$axios = axios
+
+Vue.filter('DateFilter', (input, format = 'YYYY-MM-DD HH:mm:ss') => moment(input * 1000).format(format))
 
 
 /* eslint-disable no-new */

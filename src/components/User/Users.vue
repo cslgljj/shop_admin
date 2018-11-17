@@ -47,7 +47,7 @@
                 <template slot-scope="scope">
                     <el-button size="small" @click="editUser(scope.row.id)" type="primary" icon="el-icon-edit" plain></el-button>
                     <el-button size="small"  @click="del(scope.row.id)" type="danger" icon="el-icon-delete" plain></el-button>
-                    <el-button size="small" type="success" @click="assignRole" icon="el-icon-check" plain>分配角色</el-button>
+                    <el-button size="small" type="success" @click="showAssignModal(scope.row)" icon="el-icon-check" plain>分配角色</el-button>
                 </template>
             </el-table-column>
         </el-table>
@@ -104,15 +104,22 @@
         <el-dialog title="编辑用户" :rules="rules" :visible.sync="roleDialogFormVisible">
             <el-form  :model="roleForm" ref="roleForm" :rules="rules">
                 <el-form-item label="用户名" :label-width="formLabelWidth">
-                    <el-input v-model="editForm.username" autocomplete="off" disabled=""></el-input>
+                  <el-tag type="info">{{userName}}</el-tag>
                 </el-form-item>
-                <el-form-item label="角色列表" prop="email" :label-width="formLabelWidth">
-                    <el-input></el-input>
+                <el-form-item label="角色列表" prop = "value"  :label-width="formLabelWidth">
+                    <el-select v-model="roleForm.value" placeholder="请选择">
+                    <el-option
+                      v-for="item in roleList"
+                      :key="item.id"
+                      :label="item.roleName"
+                      :value="item.id">
+                    </el-option>
+                  </el-select>
                 </el-form-item>
             </el-form>
             <div slot="footer" class="dialog-footer">
                 <el-button @click="handleEditCancel">取 消</el-button>
-                <el-button type="primary" @click="editSave()">确 定</el-button>
+                <el-button type="primary" @click="saveAssignRole()">确 定</el-button>
             </div>
         </el-dialog>
     </div>
@@ -122,7 +129,11 @@
 export default {
   data() {
     return {
-      roleForm: {},
+      uid: '',
+
+      roleForm: {
+        value: ''
+      },
       rules: {
         username: [
           { required: true, message: '请输入用户名字', trigger: 'change' },
@@ -135,7 +146,8 @@ export default {
         password: [
           { required: true, message: '请输入用户密码', trigger: 'change' },
           { min: 6, max: 12, message: '长度在 6 到 12 个字符', trigger: 'change' }
-        ] },
+        ],
+        value: [{ required: true, message: '请选择角色', trigger: 'change' }] },
       dialogFormVisible: false,
       editDialogFormVisible: false,
       roleDialogFormVisible: false,
@@ -145,12 +157,14 @@ export default {
         mobile: '',
         rid: ''
       },
+      userName: '',
       form: {
         username: '',
         password: '',
         email: '',
         mobile: ''
       },
+      roleList: [],
       formLabelWidth: '120px',
       userList: [],
       query: '',
@@ -160,8 +174,41 @@ export default {
     }
   },
   methods: {
-    assignRole() {
+    saveAssignRole() {
+      this.$refs.roleForm.validate(async(valid) => {
+        if (!valid) return false
+        const res = await this.$axios.put(`users/${this.uid}/role`, { rid: this.roleForm.value })
+        const { meta: { status } } = res
+        if (status === 200) {
+          this.roleDialogFormVisible = false
+          this.getUserList()
+          this.$message.success('分配角色成功')
+        }
+      })
+    },
+    async getRolelist() {
+      const res = await this.$axios.get('roles')
+      const { data, meta: { status } } = res
+      if (status === 200) {
+        this.roleList = data
+      }
+    },
+    async showAssignModal(scope) {
+      this.uid = scope.id
+      this.userName = scope.username
       this.roleDialogFormVisible = true
+      // 获取角色列表
+      this.getRolelist()
+      // 根据id获取用户信息
+      const res = await this.$axios.get(`users/${scope.id}`)
+      const { data, meta: { status } } = res
+      if (status === 200) {
+        if (data.rid === -1) {
+          this.roleForm.value = ''
+        } else {
+          this.roleForm.value = data.rid
+        }
+      }
     },
     statusChange(row) {
       this.$axios({
